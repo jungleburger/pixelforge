@@ -1,43 +1,57 @@
 #pragma once
-#include <pixelforge/element/element_def.hpp>
-#include <unordered_map>
+#include <pixelforge/pixel/settled_pixel.hpp>
 #include <string>
-#include <optional>
+#include <string_view>
 #include <vector>
-#include <expected>
+#include <unordered_map>
 
 namespace pf {
 
-enum class RegistryError {
-    NotFound,
-    DuplicateName,
-    InvalidDef
+enum class PhysicsModel : uint8_t {
+    Solid,
+    Powder,
+    Liquid,
+    Gas,
+    Fire,
+    Plasma,
+    Energy
+};
+
+struct ElementDef {
+    ElementID    id{0};
+    std::string  name;
+    std::string  tag;              // short lowercase key, e.g. "sand"
+    PhysicsModel physics{PhysicsModel::Solid};
+    uint32_t     color{0xFF'AA'88'FF};  // RGBA default colour
+    float        density{1.f};
+    float        viscosity{0.f};        // 0 = free-flowing, 1 = fully viscous
+    float        flammability{0.f};     // 0 = non-flammable, 1 = instantly ignites
+    float        melting_point{-1.f};   // -1 = doesn't melt
+    float        boiling_point{-1.f};   // -1 = doesn't evaporate
+    ElementID    melt_into{0};
+    ElementID    boil_into{0};
+    bool         emits_light{false};
+    float        light_radius{0.f};
+    uint32_t     light_color{0xFF'FF'FF'FF};
 };
 
 class ElementRegistry {
 public:
-    [[nodiscard]] std::expected<ElementID, RegistryError>
-        register_element(ElementDef def);
+    ElementRegistry();
 
-    [[nodiscard]] std::optional<const ElementDef*>
-        find_by_id(ElementID id) const;
+    ElementID register_element(ElementDef def);
 
-    [[nodiscard]] std::optional<const ElementDef*>
-        find_by_name(const std::string& name) const;
+    [[nodiscard]] const ElementDef* get(ElementID id) const;
+    [[nodiscard]] const ElementDef* get(std::string_view tag) const;
+    [[nodiscard]] ElementID         id_of(std::string_view tag) const;
+    [[nodiscard]] size_t            size() const { return m_defs.size(); }
 
-    [[nodiscard]] const std::vector<ElementDef>& all() const { return m_elements; }
-
-    [[nodiscard]] bool can_bond(ElementID a, ElementID b) const;
-
-    void clear();
-
-    [[nodiscard]] size_t count() const { return m_elements.size(); }
+    [[nodiscard]] auto begin() const { return m_defs.begin(); }
+    [[nodiscard]] auto end()   const { return m_defs.end();   }
 
 private:
-    std::vector<ElementDef>                  m_elements;
-    std::unordered_map<ElementID, size_t>    m_by_id;
-    std::unordered_map<std::string, size_t>  m_by_name;
-    ElementID m_next_id = 1;
+    std::vector<ElementDef>                    m_defs;
+    std::unordered_map<std::string, ElementID> m_tag_index;
 };
 
 } // namespace pf
