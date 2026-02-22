@@ -25,7 +25,8 @@ public:
     [[nodiscard]] Chunk*  get_chunk(int cx, int cy);
     [[nodiscard]] Chunk&  get_or_create_chunk(int cx, int cy);
 
-    [[nodiscard]] SettledPixel* get_settled(int wx, int wy);
+    [[nodiscard]] SettledPixel*       get_settled(int wx, int wy);
+    [[nodiscard]] const SettledPixel* get_settled(int wx, int wy) const;
     void set_settled(int wx, int wy, SettledPixel pixel);
     void remove_settled(int wx, int wy);
     [[nodiscard]] bool has_settled(int wx, int wy) const;
@@ -33,10 +34,12 @@ public:
     void add_dynamic(DynamicPixel pixel);
     [[nodiscard]] std::vector<DynamicPixel*> collect_all_dynamic();
 
-    [[nodiscard]] BondManager&       bonds()    { return m_bonds; }
-    [[nodiscard]] Lattice&           lattice()  { return m_lattice; }
-    [[nodiscard]] ElementRegistry&   registry() { return m_registry; }
-    [[nodiscard]] const WorldConfig& config()   const { return m_config; }
+    [[nodiscard]] BondManager&             bonds()    { return m_bonds; }
+    [[nodiscard]] Lattice&                 lattice()  { return m_lattice; }
+    [[nodiscard]] const Lattice&           lattice()  const { return m_lattice; }
+    [[nodiscard]] ElementRegistry&         registry() { return m_registry; }
+    [[nodiscard]] const ElementRegistry&   registry() const { return m_registry; }
+    [[nodiscard]] const WorldConfig&       config()   const { return m_config; }
 
     [[nodiscard]] static std::pair<int,int> world_to_chunk(int wx, int wy) noexcept;
     [[nodiscard]] static std::pair<int,int> world_to_local(int wx, int wy) noexcept;

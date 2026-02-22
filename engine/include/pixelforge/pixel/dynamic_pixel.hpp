@@ -6,6 +6,7 @@ namespace pf {
 
 struct DynamicPixel {
     SettledPixel base;
+    PixelID      id{0};
     glm::vec2    pos{0.f, 0.f};   // sub-pixel world position
     glm::vec2    vel{0.f, 0.f};   // pixels / second
     float        lifetime{-1.f};  // -1 = immortal

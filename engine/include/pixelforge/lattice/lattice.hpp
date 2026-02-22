@@ -16,7 +16,8 @@ public:
     void set(int wx, int wy, SettledPixel pixel);
     void remove(int wx, int wy);
 
-    std::vector<std::pair<glm::ivec2, SettledPixel*>> query_rect(AABB region);
+    std::vector<std::pair<glm::ivec2, SettledPixel*>>       query_rect(AABB region);
+    std::vector<std::pair<glm::ivec2, const SettledPixel*>> query_rect(AABB region) const;
 
     void   clear();
     [[nodiscard]] size_t size() const { return m_cells.size(); }

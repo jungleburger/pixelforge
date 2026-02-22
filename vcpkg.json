@@ -1,0 +1,23 @@
+{
+  "name": "pixelforge",
+  "version": "0.1.0",
+  "dependencies": [
+    "sdl3",
+    "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "sdl3-binding",
+        "opengl3-binding"
+      ]
+    },
+    "sol2",
+    "lua",
+    "zstd",
+    "catch2",
+    "nlohmann-json",
+    "tomlplusplus",
+    "glad"
+  ]
+}

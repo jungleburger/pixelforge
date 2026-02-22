@@ -1,4 +1,5 @@
 #pragma once
+#include <pixelforge/core/types.hpp>
 #include <cstdint>
 #include <glm/vec2.hpp>
 
@@ -7,6 +8,7 @@ namespace pf {
 using ElementID = uint16_t;
 
 struct SettledPixel {
+    PixelID    id{0};                  // stable unique ID (0 = empty)
     ElementID  element{0};
     uint8_t    temperature{25};        // degrees C, saturated at 255
     uint8_t    hp{255};                // structural integrity

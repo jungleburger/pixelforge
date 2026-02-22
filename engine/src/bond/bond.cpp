@@ -82,6 +82,11 @@ std::vector<const Bond*> BondManager::get_bonds_for_pixel(PixelID pixel_id) cons
     return result;
 }
 
+const Bond* BondManager::get(uint64_t bond_id) const {
+    auto it = m_bonds.find(bond_id);
+    return (it != m_bonds.end()) ? &it->second : nullptr;
+}
+
 int BondManager::bond_count_for_pixel(PixelID pixel_id) const {
     return static_cast<int>(m_pixel_to_bonds.count(pixel_id));
 }

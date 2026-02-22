@@ -1,0 +1,16 @@
+[world]
+name        = "Default World"
+seed        = 42
+width       = 4096
+height      = 2048
+cave_density = 0.35
+water_level  = 0.45
+lava_depth   = 0.82
+
+[biomes]
+# Biome configuration is driven by the BiomeRegistry in code.
+# Future: override biome weights here.
+
+[spawn]
+x = 2048
+y = 900
