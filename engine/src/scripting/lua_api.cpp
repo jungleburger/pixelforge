@@ -40,6 +40,27 @@ void LuaApi::bind(sol::state& lua) {
         def.thermal_conductivity = t.get_or<float>("thermal_conductivity",  0.05f);
         def.heat_output          = t.get_or<float>("heat_output",           0.f);
 
+        // Phase-4: solidification / condensation
+        def.solidify_point    = t.get_or<float>("solidify_point", -1.f);
+        def.solidify_into_tag = t.get_or<std::string>("solidify_into", "");
+
+        // Phase-4: contact reactions  (reactive_with = { {target=..., self_into=..., other_into=..., prob=1}, ... })
+        sol::optional<sol::table> rxns = t.get<sol::optional<sol::table>>("reactive_with");
+        if (rxns) {
+            rxns->for_each([&def](sol::object /*key*/, sol::object val) {
+                if (val.get_type() != sol::type::table) return;
+                sol::table row = val.as<sol::table>();
+                ElementDef::ContactReaction cr;
+                cr.target_tag     = row.get_or<std::string>("target",     "");
+                cr.self_into_tag  = row.get_or<std::string>("self_into",  "");
+                cr.other_into_tag = row.get_or<std::string>("other_into", "");
+                cr.probability    = row.get_or<float>      ("prob",       1.f);
+                if (!cr.target_tag.empty()) {
+                    def.reactions.push_back(std::move(cr));
+                }
+            });
+        }
+
         std::string physics_s = t.get_or<std::string>("physics", "solid");
         if      (physics_s == "powder") def.physics = PhysicsModel::Powder;
         else if (physics_s == "liquid") def.physics = PhysicsModel::Liquid;

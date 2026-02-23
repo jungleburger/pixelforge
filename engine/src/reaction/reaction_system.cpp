@@ -3,6 +3,7 @@
 #include <pixelforge/core/logger.hpp>
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 
 namespace pf {
 
@@ -28,6 +29,7 @@ void ReactionSystem::tick(float dt) {
     std::vector<PendingChange> changes;
     changes.reserve(64);
     evaluate_reactions(dt, changes);
+    evaluate_contact_reactions(dt, changes);
     apply_changes(changes);
 }
 
@@ -189,6 +191,84 @@ void ReactionSystem::evaluate_reactions(float dt, std::vector<PendingChange>& ou
                 }
             }
             continue;
+        }
+
+        // ── Solidification / condensation ─────────────────────────────────
+        // Triggered when temperature drops AT OR BELOW solidify_point.
+        // Examples: lava cools → stone; steam condenses → water; water freezes → ice.
+        if (def->solidify_point >= 0.f && T <= def->solidify_point) {
+            ElementID into = resolve_tag(def->solidify_into_tag);
+            if (into != INVALID_ELEMENT_ID) {
+                // Solidification produces a settled pixel directly (vel=0)
+                out.push_back({pos.x, pos.y, into, 0.f, 0.f});
+            }
+            continue;
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+void ReactionSystem::evaluate_contact_reactions(float dt,
+                                                 std::vector<PendingChange>& out)
+{
+    const auto& cfg = m_world.config();
+    auto&       lat = m_world.lattice();
+    auto&       reg = m_world.registry();
+
+    std::uniform_real_distribution<float> dist01(0.f, 1.f);
+
+    // Track positions that are already queued for removal/replacement this
+    // tick so we don't process the same cell twice.
+    std::unordered_set<uint64_t> consumed;
+    auto cell_key = [&](int x, int y) -> uint64_t {
+        return (static_cast<uint64_t>(static_cast<uint32_t>(x)) << 32) |
+               static_cast<uint32_t>(y);
+    };
+
+    for (auto& [pos, px] : lat.query_rect({0, 0, cfg.width, cfg.height})) {
+        if (!px || px->id == INVALID_PIXEL_ID) continue;
+        if (consumed.count(cell_key(pos.x, pos.y))) continue;
+
+        const ElementDef* def = reg.get(px->element);
+        if (!def || def->reactions.empty()) continue;
+
+        for (const auto& off : CARD) {
+            const int nx = pos.x + off.x;
+            const int ny = pos.y + off.y;
+
+            const SettledPixel* npx = lat.get(nx, ny);
+            if (!npx || npx->id == INVALID_PIXEL_ID) continue;
+            if (consumed.count(cell_key(nx, ny))) continue;
+
+            const ElementDef* ndef = reg.get(npx->element);
+            if (!ndef) continue;
+
+            for (const auto& rxn : def->reactions) {
+                if (rxn.target_tag != ndef->tag) continue;
+
+                // Probability roll (per-second → per-tick)
+                if (dist01(m_rng) >= rxn.probability * dt) continue;
+
+                // Queue replacement of THIS pixel
+                if (!rxn.self_into_tag.empty()) {
+                    const ElementID into = resolve_tag(rxn.self_into_tag);
+                    out.push_back({pos.x, pos.y, into, 0.f, 0.f});
+                } else {
+                    // No change to self — do nothing for this cell
+                }
+                consumed.insert(cell_key(pos.x, pos.y));
+
+                // Queue replacement/removal of the OTHER pixel
+                {
+                    const ElementID into = rxn.other_into_tag.empty()
+                                           ? INVALID_ELEMENT_ID
+                                           : resolve_tag(rxn.other_into_tag);
+                    out.push_back({nx, ny, into, 0.f, -30.f});
+                    consumed.insert(cell_key(nx, ny));
+                }
+                break; // one reaction per neighbour per tick
+            }
         }
     }
 }
