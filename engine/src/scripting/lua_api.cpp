@@ -15,18 +15,30 @@ void LuaApi::bind(sol::state& lua) {
                         sol::lib::string, sol::lib::table,
                         sol::lib::io, sol::lib::os);
 
-    // ElementDef builder
     auto& reg = m_registry;
     lua.set_function("define_element", [&reg](sol::table t) {
         ElementDef def;
-        def.name        = t.get_or<std::string>("name", "Unknown");
-        def.tag         = t.get_or<std::string>("tag",  "unknown");
-        def.color       = t.get_or<uint32_t>("color", 0xFFAAFF88u);
-        def.density     = t.get_or<float>("density", 1.f);
-        def.viscosity   = t.get_or<float>("viscosity", 0.f);
-        def.flammability= t.get_or<float>("flammability", 0.f);
-        def.melting_point= t.get_or<float>("melting_point", -1.f);
-        def.boiling_point= t.get_or<float>("boiling_point", -1.f);
+        def.name         = t.get_or<std::string>("name", "Unknown");
+        def.tag          = t.get_or<std::string>("tag",  "unknown");
+        def.color        = t.get_or<uint32_t>("color", 0xFFAAFF88u);
+        def.density      = t.get_or<float>("density",      1.f);
+        def.viscosity    = t.get_or<float>("viscosity",    0.f);
+        def.flammability = t.get_or<float>("flammability", 0.f);
+        def.melting_point= t.get_or<float>("melting_point",-1.f);
+        def.boiling_point= t.get_or<float>("boiling_point",-1.f);
+        def.emits_light  = t.get_or<bool> ("emits_light",  false);
+        def.light_radius = t.get_or<float>("light_radius",  0.f);
+        def.light_color  = t.get_or<uint32_t>("light_color", 0xFFFFFFFFu);
+
+        // Tag-string cross-references (resolved at reaction time, not at load time)
+        def.melt_into_tag = t.get_or<std::string>("melt_into", "");
+        def.boil_into_tag = t.get_or<std::string>("boil_into", "");
+        def.ash_into_tag  = t.get_or<std::string>("ash_into",  "");
+
+        // Phase-3 reaction fields
+        def.ignition_point       = t.get_or<float>("ignition_point",       -1.f);
+        def.thermal_conductivity = t.get_or<float>("thermal_conductivity",  0.05f);
+        def.heat_output          = t.get_or<float>("heat_output",           0.f);
 
         std::string physics_s = t.get_or<std::string>("physics", "solid");
         if      (physics_s == "powder") def.physics = PhysicsModel::Powder;
@@ -37,8 +49,9 @@ void LuaApi::bind(sol::state& lua) {
         else if (physics_s == "energy") def.physics = PhysicsModel::Energy;
         else                            def.physics = PhysicsModel::Solid;
 
+        std::string tag_copy = def.tag; // capture before move
         ElementID id = reg.register_element(std::move(def));
-        PF_LOG_INFO("LuaApi: registered element '{}' id={}", def.tag, id);
+        PF_LOG_INFO("LuaApi: registered element '{}' id={}", tag_copy, id);
         return static_cast<int>(id);
     });
 

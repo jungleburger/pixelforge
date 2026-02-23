@@ -10,20 +10,23 @@ namespace pf {
 namespace {
 
 // Simple flat binary format:
-// [4] magic "PFW1"
+// [4] magic "PFW2"  (bumped from PFW1 — temperature is now float)
 // [4] world width
 // [4] world height
 // [4] world seed
 // [8] cell_count
-// Per cell: [4] wx [4] wy [2] element [1] temperature [1] hp [4] color
+// Per cell: [4] wx [4] wy [2] element [2] pad [4] temperature [1] hp [3] pad [4] color
 // Then zstd-compressed.
 
-constexpr uint32_t MAGIC = 0x31574650u; // "PFW1" LE
+constexpr uint32_t MAGIC = 0x32574650u; // "PFW2" LE
 
 struct CellRecord {
     int32_t  wx, wy;
     uint16_t element;
-    uint8_t  temperature, hp;
+    uint16_t _pad0;
+    float    temperature;
+    uint8_t  hp;
+    uint8_t  _pad1[3];
     uint32_t color;
 };
 
@@ -46,8 +49,14 @@ WorldSerialiser::save(const World& world, const char* path) {
     AABB all{0, 0, cfg.width, cfg.height};
     for (auto [pos, sp] : world.lattice().query_rect(all)) {
         if (!sp) continue;
-        cells.push_back({pos.x, pos.y,
-                         sp->element, sp->temperature, sp->hp, sp->color});
+        CellRecord rec{};
+        rec.wx          = pos.x;
+        rec.wy          = pos.y;
+        rec.element     = sp->element;
+        rec.temperature = sp->temperature;
+        rec.hp          = sp->hp;
+        rec.color       = sp->color;
+        cells.push_back(rec);
     }
 
     Header hdr;
