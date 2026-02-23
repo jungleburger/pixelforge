@@ -25,6 +25,7 @@ add_library(pixelforge_engine STATIC
     src/renderer/settled_layer.cpp
     src/renderer/dynamic_layer.cpp
     src/scripting/lua_api.cpp
+    src/reaction/reaction_system.cpp
     src/save/world_serialiser.cpp
 )
 

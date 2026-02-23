@@ -33,6 +33,16 @@ struct ElementDef {
     bool         emits_light{false};
     float        light_radius{0.f};
     uint32_t     light_color{0xFF'FF'FF'FF};
+
+    // --- Phase 3: Reaction fields -----------------------------------------
+    float        ignition_point{-1.f};       // temp (°C) at which element catches fire; -1 = never
+    float        thermal_conductivity{0.05f};// fraction of temp delta transferred per second (0..1)
+    float        heat_output{0.f};           // heat (°C/s) emitted by Fire/Liquid elements
+
+    // Tag strings for cross-element references (resolved at reaction time)
+    std::string  melt_into_tag;   // e.g. "lava" — overrides melt_into ID when non-empty
+    std::string  boil_into_tag;   // e.g. "steam"
+    std::string  ash_into_tag;    // e.g. "stone" — what a burnt element leaves behind
 };
 
 class ElementRegistry {

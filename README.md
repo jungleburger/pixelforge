@@ -125,6 +125,7 @@ pixelforge/
 │   │   ├── bond/           Bond, BondManager
 │   │   ├── lattice/        Lattice (sparse integer grid)
 │   │   ├── physics/        ParticleSystem
+│   │   ├── reaction/       ReactionSystem (Phase 3)
 │   │   ├── world/          World, Chunk
 │   │   ├── procgen/        WorldGenerator, BiomeRegistry
 │   │   ├── renderer/       IRenderer, GlRenderer, layers
@@ -150,16 +151,25 @@ pixelforge/
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 1 | **Foundation** — types, lattice, bond system, physics, procgen | 🚧 In Progress |
-| 2 | **Renderer** — GL texture pipeline, dynamic point sprites | ⬜ Planned |
-| 3 | **Element Reactions** — temperature-driven chain reactions | ⬜ Planned |
-| 4 | **Scripting** — full Sol2 Lua bindings, hot-reload | ⬜ Planned |
-| 5 | **Editor** — full ImGui panel suite | ⬜ Planned |
-| 6 | **Save/Load** — zstd world serialisation | ⬜ Planned |
+| 1 | **Foundation** — types, lattice, bond system, physics, procgen | ✅ Complete |
+| 2 | **Renderer** — GL texture pipeline, dynamic point sprites | ✅ Complete |
+| 3 | **Element Reactions** — temperature-driven chain reactions | ✅ Complete |
+| 4 | **Scripting** — full Sol2 Lua bindings, hot-reload | 🔜 Next — bindings done, hot-reload remaining |
+| 5 | **Editor** — full ImGui panel suite | 🟡 Partial — shell + stubs; console & perf panels functional |
+| 6 | **Save/Load** — zstd world serialisation | 🟡 Partial — `WorldSerialiser` API exists, untested end-to-end |
 | 7 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
 | 8 | **Audio** — SDL3 audio, element sound events | ⬜ Planned |
 | 9 | **Networking** — deterministic lock-step multiplayer | ⬜ Planned |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
+
+### Phase 4 — Scripting / Hot-reload (current focus)
+
+Sol2 Lua bindings and element loading are functional. Remaining work:
+
+- File-watcher to detect changes in `assets/elements/*.lua` at runtime
+- In-place `ElementRegistry` patching without restarting the simulation
+- Lua sandbox safety (remove `io`/`os` from runtime, keep for load phase only)
+- `LuaApi` exposure of `ReactionSystem::apply_heat()` for scripted events
 
 ---
 

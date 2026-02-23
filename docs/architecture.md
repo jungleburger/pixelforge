@@ -19,9 +19,13 @@ PixelForge is a 2D pixel-simulation engine built on a **hybrid particle-physics 
 │  │ │Lattice │ │  └─────────────┘  └──────────────────────┘   │
 │  │ └────────┘ │                                               │
 │  │ ┌────────┐ │  ┌─────────────┐  ┌──────────────────────┐   │
-│  │ │BondMgr │ │  │  GlRenderer │  │      LuaApi          │   │
-│  │ └────────┘ │  │ (renderer/) │  │   (scripting/)       │   │
+│  │ │BondMgr │ │  │ReactionSystem│  │      LuaApi          │   │
+│  │ └────────┘ │  │ (reaction/) │  │   (scripting/)       │   │
 │  └────────────┘  └─────────────┘  └──────────────────────┘   │
+│                  ┌─────────────┐                              │
+│                  │  GlRenderer │                              │
+│                  │ (renderer/) │                              │
+│                  └─────────────┘                              │
 │                                                                │
 │  ┌─────────────────────────────────────────────────────────┐  │
 │  │          ElementRegistry  (element/)                    │  │
@@ -59,11 +63,12 @@ PixelForge is a 2D pixel-simulation engine built on a **hybrid particle-physics 
 | `bond/`   | Bond, BondManager |
 | `lattice/`| Sparse integer-grid lookup |
 | `physics/`| ParticleSystem (fixed timestep 1/60 s) |
+| `reaction/`| ReactionSystem — temperature propagation, melting, boiling, ignition |
 | `world/`  | World, Chunk |
 | `procgen/`| WorldGenerator, BiomeRegistry, noise utilities |
 | `renderer/`| IRenderer, GlRenderer, SettledLayer, DynamicLayer |
 | `scripting/`| LuaApi (Sol2) |
-| `save/`   | WorldSerialiser (zstd binary) |
+| `save/`   | WorldSerialiser (zstd binary, format PFW2) |
 
 ## Data Flow
 
@@ -76,7 +81,10 @@ Lua scripts
               Lattice (settled)   dynamic_pixels
                     │                    │
                BondManager         ParticleSystem
-                    │                    │
+                    │         ┌──────────┘
+               ReactionSystem─┘  (reads & mutates Lattice;
+                    │             spawns new DynamicPixels)
+                    │
               SettledLayer          DynamicLayer
                     └─────────┬──────────┘
                            GlRenderer
