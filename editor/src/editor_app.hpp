@@ -3,7 +3,9 @@
 #include <pixelforge/element/element_registry.hpp>
 #include <pixelforge/physics/particle_system.hpp>
 #include <pixelforge/reaction/reaction_system.hpp>
+#include <pixelforge/procgen/biome.hpp>
 #include <pixelforge/renderer/gl_renderer.hpp>
+#include <pixelforge/save/world_serialiser.hpp>
 #include "editor_context.hpp"
 #include "panels/viewport_panel.hpp"
 #include "panels/inspector_panel.hpp"
@@ -13,6 +15,7 @@
 #include "panels/performance_panel.hpp"
 #include "panels/hierarchy_panel.hpp"
 #include "panels/worldgen_panel.hpp"
+#include "panels/asset_browser_panel.hpp"
 #include <memory>
 #include <string>
 
@@ -39,6 +42,7 @@ private:
     void*                           m_gl_ctx{nullptr};
 
     std::unique_ptr<ElementRegistry> m_registry;
+    std::unique_ptr<BiomeRegistry>   m_biomes;
     std::unique_ptr<World>           m_world;
     std::unique_ptr<ParticleSystem>  m_particles;
     std::unique_ptr<ReactionSystem>  m_reactions;
@@ -55,6 +59,7 @@ private:
     PerformancePanel    m_perf_panel;
     HierarchyPanel      m_hierarchy_panel;
     WorldgenPanel       m_worldgen_panel;
+    AssetBrowserPanel   m_asset_browser_panel;
 
     bool  m_running{false};
     float m_last_time{0.f};
