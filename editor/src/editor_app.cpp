@@ -1,10 +1,4 @@
 #include "editor_app.hpp"
-#include "editor_context.hpp"
-#include "panels/viewport_panel.hpp"
-#include "panels/console_panel.hpp"
-#include "panels/element_palette_panel.hpp"
-#include "panels/performance_panel.hpp"
-
 #include <pixelforge/core/logger.hpp>
 #include <pixelforge/procgen/generator.hpp>
 #include <pixelforge/procgen/biome.hpp>
@@ -56,6 +50,12 @@ bool EditorApp::init(int window_w, int window_h) {
     m_world    = std::make_unique<World>(cfg, *m_registry);
 
     m_particles = std::make_unique<ParticleSystem>(*m_world);
+    m_reactions = std::make_unique<ReactionSystem>(*m_world);
+
+    // Wire EditorContext
+    m_ctx.world     = m_world.get();
+    m_ctx.registry  = m_registry.get();
+    m_ctx.reactions = m_reactions.get();
 
     m_renderer = std::make_unique<GlRenderer>();
     if (!m_renderer->init(m_window, window_w, window_h)) {
@@ -104,6 +104,9 @@ void EditorApp::process_events() {
 
 void EditorApp::update(float dt) {
     m_particles->update(dt);
+    m_reactions->apply_dynamic_heat(dt);
+    m_reactions->tick(dt);
+    m_perf_panel.record_frame(dt);
     m_renderer->settled_layer().upload(*m_world);
     m_renderer->dynamic_layer().upload(*m_world);
 }
@@ -117,14 +120,36 @@ void EditorApp::render() {
 
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
-    // Minimal menu bar
+    // Menu bar
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Quit")) m_running = false;
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("View")) {
+            ImGui::MenuItem("Temperature Overlay", nullptr, &m_ctx.show_temp_overlay);
+            ImGui::MenuItem("Show Grid",           nullptr, &m_ctx.show_grid);
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Simulation")) {
+            ImGui::SliderFloat("Ambient Temp (°C)", &m_reactions->ambient_temperature,
+                               -100.f, 2000.f, "%.0f");
+            ImGui::SliderFloat("Conduction Scale",  &m_reactions->conduction_scale,
+                               0.f, 10.f, "%.2f");
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
     }
+
+    // Draw all panels
+    m_viewport_panel.draw(m_ctx);
+    m_inspector_panel.draw(m_ctx);
+    m_element_editor_panel.draw(m_ctx);
+    m_palette_panel.draw(m_ctx);
+    m_console_panel.draw(m_ctx);
+    m_perf_panel.draw(m_ctx);
+    m_hierarchy_panel.draw(m_ctx);
+    m_worldgen_panel.draw(m_ctx);
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -140,6 +165,7 @@ void EditorApp::shutdown() {
         ImGui::DestroyContext();
     }
     m_renderer.reset();
+    m_reactions.reset();
     m_particles.reset();
     m_world.reset();
     m_registry.reset();

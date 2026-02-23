@@ -43,6 +43,22 @@ struct ElementDef {
     std::string  melt_into_tag;   // e.g. "lava" — overrides melt_into ID when non-empty
     std::string  boil_into_tag;   // e.g. "steam"
     std::string  ash_into_tag;    // e.g. "stone" — what a burnt element leaves behind
+
+    // --- Phase 4: Solidification / condensation ---------------------------
+    // When temperature drops AT OR BELOW solidify_point the pixel converts.
+    // Examples: lava (800 °C → stone), steam (100 °C → water), water (0 °C → ice)
+    float        solidify_point{-1.f};       // -1 = never solidifies
+    std::string  solidify_into_tag;          // element tag to become on solidification
+
+    // --- Phase 4: Contact reactions ----------------------------------------
+    // Checked each tick for every settled pixel against its 4 cardinal neighbours.
+    struct ContactReaction {
+        std::string  target_tag;         // neighbour element that triggers this reaction
+        std::string  self_into_tag;      // what THIS pixel becomes  (empty = no change)
+        std::string  other_into_tag;     // what the OTHER pixel becomes (empty = disappear)
+        float        probability{1.f};   // per-second chance of reaction (0..1)
+    };
+    std::vector<ContactReaction> reactions;  ///< contact-based reactions with neighbours
 };
 
 class ElementRegistry {

@@ -53,6 +53,7 @@ private:
 
     void propagate_temperature(float dt);
     void evaluate_reactions(float dt, std::vector<PendingChange>& out);
+    void evaluate_contact_reactions(float dt, std::vector<PendingChange>& out);
     void apply_changes(std::vector<PendingChange>& changes);
 
     [[nodiscard]] ElementID resolve_tag(std::string_view tag) const;

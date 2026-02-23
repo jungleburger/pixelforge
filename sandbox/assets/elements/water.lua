@@ -10,4 +10,7 @@ define_element {
     boil_into            = "steam",
     -- Phase 3
     thermal_conductivity = 0.3,
+    -- Phase 4: freezing
+    solidify_point       = 273.0,    -- freezes to ice at/below 0 °C (273 K)
+    solidify_into        = "ice",
 }
