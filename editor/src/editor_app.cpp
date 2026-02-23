@@ -212,7 +212,7 @@ void EditorApp::shutdown() {
     m_world.reset();
     m_biomes.reset();
     m_registry.reset();
-    if (m_gl_ctx)  { SDL_GL_DeleteContext(m_gl_ctx);  m_gl_ctx = nullptr; }
+    if (m_gl_ctx)  { SDL_GL_DestroyContext(m_gl_ctx);  m_gl_ctx = nullptr; }
     if (m_window)  { SDL_DestroyWindow(m_window);     m_window = nullptr; }
     SDL_Quit();
 }

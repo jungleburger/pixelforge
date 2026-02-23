@@ -4,7 +4,9 @@ find_package(glm CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(sol2 CONFIG REQUIRED)
+find_package(Lua REQUIRED)
 find_package(zstd CONFIG REQUIRED)
+find_package(tomlplusplus CONFIG REQUIRED)
 
 # ── pixelforge_engine static library ─────────────────────────────────────────
 add_library(pixelforge_engine STATIC
@@ -21,6 +23,7 @@ add_library(pixelforge_engine STATIC
     src/procgen/noise_utils.cpp
     src/procgen/biome.cpp
     src/procgen/generator.cpp
+    src/procgen/world_config_loader.cpp
     src/renderer/gl_renderer.cpp
     src/renderer/settled_layer.cpp
     src/renderer/dynamic_layer.cpp
@@ -35,6 +38,7 @@ target_include_directories(pixelforge_engine
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vendor>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${LUA_INCLUDE_DIR}
 )
 
 target_link_libraries(pixelforge_engine
@@ -44,7 +48,9 @@ target_link_libraries(pixelforge_engine
         glad::glad
         SDL3::SDL3
         sol2::sol2
+        ${LUA_LIBRARIES}
         $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
+        tomlplusplus::tomlplusplus
 )
 
 target_compile_features(pixelforge_engine PUBLIC cxx_std_23)

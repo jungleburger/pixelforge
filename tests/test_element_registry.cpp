@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <pixelforge/element/element_registry.hpp>
 
 TEST_CASE("ElementRegistry: default air element at ID 0", "[element_registry]") {
@@ -24,7 +25,7 @@ TEST_CASE("ElementRegistry: register and lookup by id", "[element_registry]") {
     const auto* found = reg.get(id);
     REQUIRE(found != nullptr);
     REQUIRE(found->name == "Sand");
-    REQUIRE(found->density == Approx(1.6f));
+    REQUIRE_THAT(found->density, Catch::Matchers::WithinAbs(1.6f, 0.001f));
 }
 
 TEST_CASE("ElementRegistry: lookup by tag", "[element_registry]") {

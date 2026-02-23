@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <pixelforge/bond/bond.hpp>
 
 TEST_CASE("BondManager: create bond", "[bonding]") {
@@ -51,5 +52,5 @@ TEST_CASE("BondManager: tick_age increments age", "[bonding]") {
     bonds.tick_age(0.5f);
     const pf::Bond* b = bonds.get(bid);
     REQUIRE(b != nullptr);
-    REQUIRE(b->age == Approx(0.5f));
+    REQUIRE_THAT(b->age, Catch::Matchers::WithinAbs(0.5f, 0.001f));
 }
