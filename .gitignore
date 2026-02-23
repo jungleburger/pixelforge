@@ -1,0 +1,48 @@
+# Build artifacts
+build/
+out/
+cmake-build-*/
+*.user
+*.suo
+.vs/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+
+# vcpkg installed packages
+vcpkg_installed/
+
+# Compiled object files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+
+# IDE files
+.idea/
+.vscode/
+*.code-workspace
+*.xcodeproj/
+*.xcworkspace/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Ninja
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Save files (user-generated)
+saves/
+*.pfw
