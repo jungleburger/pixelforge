@@ -125,7 +125,7 @@ pixelforge/
 │   │   ├── bond/           Bond, BondManager
 │   │   ├── lattice/        Lattice (sparse integer grid)
 │   │   ├── physics/        ParticleSystem
-│   │   ├── reaction/       ReactionSystem (Phase 3)
+│   │   ├── reaction/       ReactionSystem — temperature, solidification, contact reactions
 │   │   ├── world/          World, Chunk
 │   │   ├── procgen/        WorldGenerator, BiomeRegistry
 │   │   ├── renderer/       IRenderer, GlRenderer, layers
@@ -153,23 +153,28 @@ pixelforge/
 |-------|-------|--------|
 | 1 | **Foundation** — types, lattice, bond system, physics, procgen | ✅ Complete |
 | 2 | **Renderer** — GL texture pipeline, dynamic point sprites | ✅ Complete |
-| 3 | **Element Reactions** — temperature-driven chain reactions | ✅ Complete |
-| 4 | **Scripting** — full Sol2 Lua bindings, hot-reload | 🔜 Next — bindings done, hot-reload remaining |
-| 5 | **Editor** — full ImGui panel suite | 🟡 Partial — shell + stubs; console & perf panels functional |
-| 6 | **Save/Load** — zstd world serialisation | 🟡 Partial — `WorldSerialiser` API exists, untested end-to-end |
-| 7 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
-| 8 | **Audio** — SDL3 audio, element sound events | ⬜ Planned |
-| 9 | **Networking** — deterministic lock-step multiplayer | ⬜ Planned |
+| 3 | **Element Reactions** — temperature propagation, melting, boiling, ignition, fire/lava heat emission | ✅ Complete |
+| 4 | **Phase Changes & Contact Reactions** — solidification/condensation (lava→stone, steam→water, water→ice), contact reaction table, full Sol2 Lua bindings (`solidify_point`, `reactive_with`), editor integration (heat brush, temp overlay, InspectorPanel thermal display) | ✅ Complete |
+| 5 | **Editor** — full ImGui panel suite | ✅ Complete |
+| 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | 🔜 Next |
+| 7 | **Save/Load** — zstd world serialisation | 🟡 Partial — `WorldSerialiser` API wired into File menu (Save/Load + inline path) and Asset Browser; end-to-end round-trip testing remaining |
+| 8 | **Scripting** — Lua hot-reload, modding API | ⬜ Planned |
+| 9 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
 
-### Phase 4 — Scripting / Hot-reload (current focus)
+### Phase 6 — Procedural World Generator (current focus)
 
-Sol2 Lua bindings and element loading are functional. Remaining work:
+The `WorldGenerator` and `BiomeRegistry` are functional — the **World Gen** editor panel already
+calls `WorldGenerator::generate()` using the live world and biome registry. Phase 6 expands
+the generator itself with richer content:
 
-- File-watcher to detect changes in `assets/elements/*.lua` at runtime
-- In-place `ElementRegistry` patching without restarting the simulation
-- Lua sandbox safety (remove `io`/`os` from runtime, keep for load phase only)
-- `LuaApi` exposure of `ReactionSystem::apply_heat()` for scripted events
+- Simplex noise heightmap + proper biome zone assignment
+- Terrain layering (dirt → stone → bedrock depth bands)
+- Perlin-worm cave carving
+- Material injection (ore veins, water / lava pockets, gas pockets)
+- Feature placement (underground lakes, ruins, crystal formations)
+- Bond initialisation — every placed pixel bonds with all valid lattice neighbours on generation
+- TOML world-config loader (`default_world.toml` → `WorldConfig`) via toml++
 
 ---
 
