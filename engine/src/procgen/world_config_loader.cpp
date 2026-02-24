@@ -36,7 +36,7 @@ std::optional<WorldConfig> load_world_config(const char* path) {
     if (auto v = world["lava_depth"].value<double>())
         cfg.lava_depth = static_cast<float>(*v);
 
-    PF_LOG_INFO("WorldConfig: loaded '{}' — {}×{} seed={} cave={:.2f} "
+    PF_LOG_INFO("WorldConfig: loaded '{}' — {}x{} seed={} cave={:.2f} "
                 "water={:.2f} lava={:.2f}",
                 path, cfg.width, cfg.height, cfg.seed,
                 cfg.cave_density, cfg.water_level, cfg.lava_depth);

@@ -91,7 +91,7 @@ void ViewportPanel::draw(EditorContext& ctx) {
                            "  \u2714 Temperature overlay  (cold=blue \u2192 hot=red)");
     if (ctx.heat_brush_active)
         ImGui::TextColored({1.f, 0.3f, 0.3f, 1.f},
-                           "  \U0001F525 Heat brush: %+.0f\u00b0C/click",
+                           "  [Heat brush] %+.0f\u00b0C/click",
                            ctx.heat_brush_amount);
     if (ctx.selection_box.has_value()) {
         const auto& b = *ctx.selection_box;
