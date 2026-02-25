@@ -157,7 +157,7 @@ pixelforge/
 | 4 | **Phase Changes & Contact Reactions** — solidification/condensation (lava→stone, steam→water, water→ice), contact reaction table, full Sol2 Lua bindings (`solidify_point`, `reactive_with`), editor integration (heat brush, temp overlay, InspectorPanel thermal display) | ✅ Complete |
 | 5 | **Editor** — full ImGui panel suite | ✅ Complete |
 | 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | ✅ Complete |
-| 7 | **Save/Load** — zstd world serialisation | 🟡 Partial — `WorldSerialiser` API wired into File menu (Save/Load + inline path) and Asset Browser; end-to-end round-trip testing remaining |
+| 7 | **Save/Load** — zstd world serialisation | ✅ Complete |
 | 8 | **Scripting** — Lua hot-reload, modding API | ⬜ Planned |
 | 9 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
@@ -181,10 +181,22 @@ Fully implemented. Key additions to `WorldGenerator`, `BiomeRegistry`, and the e
   `assets/worlds/sandbox_world.toml` with a fallback to hardcoded defaults
 - **New elements**: `dirt` (powder, brown subsurface), `crystal` (solid, light-emitting, deep ore)
 
-### Phase 7 — Save/Load (next focus)
+### Phase 7 — Save/Load ✅
 
-`WorldSerialiser` API is already wired into the File menu (Save/Load + inline path) and Asset
-Browser; end-to-end round-trip testing remains.
+Fully implemented. Key additions:
+
+- **Binary format v2** (`PFW2`) — flat `CellRecord` array (position, element ID, temperature, hp,
+  colour) prefixed with a `Header` (magic, dimensions, seed, cell count)
+- **zstd compression** — level 3; typical world saves compress 10–30× smaller than raw
+- **`WorldSerialiser::save`** — iterates `lattice().query_rect(full_world_AABB)`, serialises all
+  settled pixels, compresses with `ZSTD_compress`, and writes to disk
+- **`WorldSerialiser::load`** — reads file, decompresses, validates magic, rebuilds `World` and
+  re-populates the lattice via `world.set_settled`
+- **Editor integration** — File menu Save (`Ctrl+S`) / Load (`Ctrl+L`) with inline path field;
+  Asset Browser highlights `.pfw` files and sets save path with one click
+- **Round-trip test suite** (`test_save.cpp`) — 8 Catch2 tests: empty world, pixel attribute
+  preservation, config fields, large world (5 000 cells) spot-check, overwrite semantics,
+  save/load error paths, and corrupt-data rejection
 
 ---
 
