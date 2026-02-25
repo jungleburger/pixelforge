@@ -17,18 +17,26 @@ void LuaApi::bind(sol::state& lua) {
 
     auto& reg = m_registry;
     lua.set_function("define_element", [&reg](sol::table t) {
+        // sol2/C++23 helper — avoids ambiguous get_or<T> overloads
+        auto getf = [&](const char* k, float     fb) -> float     {
+            auto v = t.get<sol::optional<float>>(k); return v ? *v : fb; };
+        auto getu = [&](const char* k, uint32_t  fb) -> uint32_t  {
+            auto v = t.get<sol::optional<uint32_t>>(k); return v ? *v : fb; };
+        auto getb = [&](const char* k, bool      fb) -> bool      {
+            auto v = t.get<sol::optional<bool>>(k); return v ? *v : fb; };
+
         ElementDef def;
         def.name         = t.get_or<std::string>("name", "Unknown");
         def.tag          = t.get_or<std::string>("tag",  "unknown");
-        def.color        = t.get_or<uint32_t>("color", 0xFFAAFF88u);
-        def.density      = t.get_or<float>("density",      1.f);
-        def.viscosity    = t.get_or<float>("viscosity",    0.f);
-        def.flammability = t.get_or<float>("flammability", 0.f);
-        def.melting_point= t.get_or<float>("melting_point",-1.f);
-        def.boiling_point= t.get_or<float>("boiling_point",-1.f);
-        def.emits_light  = t.get_or<bool> ("emits_light",  false);
-        def.light_radius = t.get_or<float>("light_radius",  0.f);
-        def.light_color  = t.get_or<uint32_t>("light_color", 0xFFFFFFFFu);
+        def.color        = getu("color", 0xFFAAFF88u);
+        def.density      = getf("density",      1.f);
+        def.viscosity    = getf("viscosity",    0.f);
+        def.flammability = getf("flammability", 0.f);
+        def.melting_point= getf("melting_point",-1.f);
+        def.boiling_point= getf("boiling_point",-1.f);
+        def.emits_light  = getb("emits_light",  false);
+        def.light_radius = getf("light_radius",  0.f);
+        def.light_color  = getu("light_color", 0xFFFFFFFFu);
 
         // Tag-string cross-references (resolved at reaction time, not at load time)
         def.melt_into_tag = t.get_or<std::string>("melt_into", "");
@@ -36,12 +44,12 @@ void LuaApi::bind(sol::state& lua) {
         def.ash_into_tag  = t.get_or<std::string>("ash_into",  "");
 
         // Phase-3 reaction fields
-        def.ignition_point       = t.get_or<float>("ignition_point",       -1.f);
-        def.thermal_conductivity = t.get_or<float>("thermal_conductivity",  0.05f);
-        def.heat_output          = t.get_or<float>("heat_output",           0.f);
+        def.ignition_point       = getf("ignition_point",       -1.f);
+        def.thermal_conductivity = getf("thermal_conductivity",  0.05f);
+        def.heat_output          = getf("heat_output",           0.f);
 
         // Phase-4: solidification / condensation
-        def.solidify_point    = t.get_or<float>("solidify_point", -1.f);
+        def.solidify_point    = getf("solidify_point", -1.f);
         def.solidify_into_tag = t.get_or<std::string>("solidify_into", "");
 
         // Phase-4: contact reactions  (reactive_with = { {target=..., self_into=..., other_into=..., prob=1}, ... })
@@ -50,11 +58,13 @@ void LuaApi::bind(sol::state& lua) {
             rxns->for_each([&def](sol::object /*key*/, sol::object val) {
                 if (val.get_type() != sol::type::table) return;
                 sol::table row = val.as<sol::table>();
+                auto rowf = [&](const char* k, float fb) -> float {
+                    auto v = row.get<sol::optional<float>>(k); return v ? *v : fb; };
                 ElementDef::ContactReaction cr;
                 cr.target_tag     = row.get_or<std::string>("target",     "");
                 cr.self_into_tag  = row.get_or<std::string>("self_into",  "");
                 cr.other_into_tag = row.get_or<std::string>("other_into", "");
-                cr.probability    = row.get_or<float>      ("prob",       1.f);
+                cr.probability    = rowf("prob", 1.f);
                 if (!cr.target_tag.empty()) {
                     def.reactions.push_back(std::move(cr));
                 }

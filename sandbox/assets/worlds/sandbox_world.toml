@@ -1,0 +1,12 @@
+[world]
+name         = "Sandbox World"
+seed         = 12345
+width        = 256
+height       = 128
+cave_density = 0.30
+water_level  = 0.45
+lava_depth   = 0.82
+
+[spawn]
+x = 128
+y = 50

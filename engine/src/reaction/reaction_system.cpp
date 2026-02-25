@@ -24,13 +24,16 @@ ReactionSystem::ReactionSystem(World& world)
 // ─────────────────────────────────────────────────────────────────────────────
 
 void ReactionSystem::tick(float dt) {
-    propagate_temperature(dt);
-
+    // Evaluate reactions on the *current* temperature snapshot before
+    // propagation alters temperatures (important for elements with
+    // phase-transition points at or near ambient, e.g. ice at 0 °C).
     std::vector<PendingChange> changes;
     changes.reserve(64);
     evaluate_reactions(dt, changes);
     evaluate_contact_reactions(dt, changes);
     apply_changes(changes);
+
+    propagate_temperature(dt);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +157,9 @@ void ReactionSystem::evaluate_reactions(float dt, std::vector<PendingChange>& ou
         const float T = px->temperature;
 
         // ── Melting ────────────────────────────────────────────────────────
-        if (def->melting_point > 0.f && T >= def->melting_point) {
+        // Use tag presence as guard so elements with melting_point == 0 (e.g.
+        // ice) are handled correctly — the old `> 0.f` guard excluded them.
+        if (!def->melt_into_tag.empty() && T >= def->melting_point) {
             ElementID into = resolve_tag(def->melt_into_tag);
             if (into == INVALID_ELEMENT_ID) into = def->melt_into;
             out.push_back({pos.x, pos.y, into, 0.f, -20.f});
@@ -247,8 +252,9 @@ void ReactionSystem::evaluate_contact_reactions(float dt,
             for (const auto& rxn : def->reactions) {
                 if (rxn.target_tag != ndef->tag) continue;
 
-                // Probability roll (per-second → per-tick)
-                if (dist01(m_rng) >= rxn.probability * dt) continue;
+                // Probability is per-tick (1.0 = always fires, 0.0 = never).
+                // Do NOT scale by dt — contact reactions are discrete events.
+                if (dist01(m_rng) >= rxn.probability) continue;
 
                 // Queue replacement of THIS pixel
                 if (!rxn.self_into_tag.empty()) {

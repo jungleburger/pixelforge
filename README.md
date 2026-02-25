@@ -46,7 +46,7 @@ When a dynamic pixel comes to rest next to a settled neighbour (or hits the worl
 ```powershell
 git clone https://github.com/jungleburger/pixelforge
 cd pixelforge
-cmake -B build -G "Visual Studio 17 2022" -A x64 `
+cmake -B build -G "Visual Studio 18 2026" -A x64 `
     -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 cmake --build build --config Release
 ```
@@ -156,25 +156,35 @@ pixelforge/
 | 3 | **Element Reactions** — temperature propagation, melting, boiling, ignition, fire/lava heat emission | ✅ Complete |
 | 4 | **Phase Changes & Contact Reactions** — solidification/condensation (lava→stone, steam→water, water→ice), contact reaction table, full Sol2 Lua bindings (`solidify_point`, `reactive_with`), editor integration (heat brush, temp overlay, InspectorPanel thermal display) | ✅ Complete |
 | 5 | **Editor** — full ImGui panel suite | ✅ Complete |
-| 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | 🔜 Next |
+| 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | ✅ Complete |
 | 7 | **Save/Load** — zstd world serialisation | 🟡 Partial — `WorldSerialiser` API wired into File menu (Save/Load + inline path) and Asset Browser; end-to-end round-trip testing remaining |
 | 8 | **Scripting** — Lua hot-reload, modding API | ⬜ Planned |
 | 9 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
 
-### Phase 6 — Procedural World Generator (current focus)
+### Phase 6 — Procedural World Generator ✅
 
-The `WorldGenerator` and `BiomeRegistry` are functional — the **World Gen** editor panel already
-calls `WorldGenerator::generate()` using the live world and biome registry. Phase 6 expands
-the generator itself with richer content:
+Fully implemented. Key additions to `WorldGenerator`, `BiomeRegistry`, and the engine:
 
-- Simplex noise heightmap + proper biome zone assignment
-- Terrain layering (dirt → stone → bedrock depth bands)
-- Perlin-worm cave carving
-- Material injection (ore veins, water / lava pockets, gas pockets)
-- Feature placement (underground lakes, ruins, crystal formations)
-- Bond initialisation — every placed pixel bonds with all valid lattice neighbours on generation
-- TOML world-config loader (`default_world.toml` → `WorldConfig`) via toml++
+- **Simplex noise heightmap** with 4-octave FBm; surface height spans 30–70 % of world height
+- **Horizontal biome zones** — `classify_zone(wx)` samples a low-frequency Perlin field to assign
+  columns to *Temperate*, *Cold*, or *Arid* climate zones, each with distinct surface/fill elements
+- **Terrain depth bands** — surface row, dirt/ice/sand subsurface band (~6 % of depth),
+  stone bulk (~82 %), bedrock/lava deep zone (~12 %)
+- **Perlin-worm cave carving** — configurable worm count/steps/radius; worms steer via a
+  dedicated Perlin FNL for smooth, organic tunnel shapes
+- **Material injection** — water pockets (shallow), lava pockets (deep), gas (smoke) pockets
+- **Feature placement** — elliptical underground lakes (carved + water-filled), multi-spire
+  crystal clusters using the new `crystal` element
+- **Bond initialisation** — every placed settled pixel bonds all valid N/S/E/W neighbours
+- **TOML world-config loader** — `load_world_config(path)` via toml++; sandbox auto-loads
+  `assets/worlds/sandbox_world.toml` with a fallback to hardcoded defaults
+- **New elements**: `dirt` (powder, brown subsurface), `crystal` (solid, light-emitting, deep ore)
+
+### Phase 7 — Save/Load (next focus)
+
+`WorldSerialiser` API is already wired into the File menu (Save/Load + inline path) and Asset
+Browser; end-to-end round-trip testing remains.
 
 ---
 

@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# MSVC: treat all source files as UTF-8 (required for non-ASCII characters in
+# comments and string literals, e.g. box-drawing dividers and degree symbols)
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 # vcpkg toolchain is typically set by the CI / user via -DCMAKE_TOOLCHAIN_FILE
 # Fallback: look for it in common locations.
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})

@@ -142,7 +142,6 @@ void AssetBrowserPanel::draw(EditorContext& ctx) {
             ImGui::TextColored({1.f, 0.85f, 0.5f, 1.f}, "TOML world config");
             ImGui::TextDisabled("Configure generation params and use the");
             ImGui::TextDisabled("World Gen panel to regenerate.");
-        }
             ImGui::SameLine();
             if (ImGui::Button("Set as Save Path")) {
                 ctx.save_path = fe.path.string();

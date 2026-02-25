@@ -58,19 +58,65 @@ void WorldgenPanel::draw(EditorContext& ctx) {
     noise_params_widget("Terrain Noise", m_gen_cfg.terrain_noise);
     noise_params_widget("Cave Noise",    m_gen_cfg.cave_noise);
     noise_params_widget("Ore Noise",     m_gen_cfg.ore_noise);
+    noise_params_widget("Biome Noise",   m_gen_cfg.biome_noise);
 
-    // ── Biomes ────────────────────────────────────────────────────────────
+    // ── Cave worms ─────────────────────────────────────────────────────────
+    if (ImGui::CollapsingHeader("Cave Worms")) {
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt  ("Worm Count",    &m_gen_cfg.worm_count,    1,  200);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt  ("Worm Steps",    &m_gen_cfg.worm_steps,   20, 600);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderFloat("Step Size (px)", &m_gen_cfg.worm_step_px, 0.5f, 8.f, "%.1f");
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderFloat("Worm Radius",   &m_gen_cfg.worm_radius,  1.f, 12.f, "%.1f");
+    }
+
+    // ── Feature / pocket counts ────────────────────────────────────────────
+    if (ImGui::CollapsingHeader("Features & Pockets")) {
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt("Water Pockets",    &m_gen_cfg.water_pocket_count,    0, 80);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt("Lava Pockets",     &m_gen_cfg.lava_pocket_count,     0, 60);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt("Gas Pockets",      &m_gen_cfg.gas_pocket_count,      0, 50);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt("Underground Lakes",&m_gen_cfg.underground_lake_count, 0, 20);
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderInt("Crystal Clusters", &m_gen_cfg.crystal_cluster_count, 0, 100);
+    }
+
+    // ── Depth bands ────────────────────────────────────────────────────────
+    if (ImGui::CollapsingHeader("Depth Bands")) {
+        ImGui::TextDisabled("Fractions of subsurface height");
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderFloat("Dirt Band",  &m_gen_cfg.dirt_band_frac,  0.01f, 0.30f, "%.2f");
+        ImGui::SetNextItemWidth(130.f);
+        ImGui::SliderFloat("Stone Band", &m_gen_cfg.stone_band_frac, 0.40f, 0.95f, "%.2f");
+        ImGui::TextDisabled("Deep = 1 - dirt - stone");
+    }
+
+    // ── Biomes ─────────────────────────────────────────────────────────────
     if (ctx.biomes) {
         ImGui::SeparatorText("Registered Biomes");
         ImGui::Text("Count: %zu", ctx.biomes->size());
-        const float probe_step = 0.1f;
-        for (float d = 0.f; d <= 1.f; d += probe_step) {
-            const pf::BiomeDef* bdef = ctx.biomes->get_biome_at(d);
-            if (bdef) {
-                ImGui::BulletText("depth %.1f \u2013 %.1f  \u2192  %s",
-                                  bdef->min_depth, bdef->max_depth,
-                                  bdef->name.c_str());
+
+        constexpr const char* zone_names[] = {"Temperate", "Cold", "Arid"};
+        constexpr pf::BiomeZone zones[]    = {
+            pf::BiomeZone::Temperate, pf::BiomeZone::Cold, pf::BiomeZone::Arid
+        };
+        for (int z = 0; z < 3; ++z) {
+            if (!ImGui::TreeNode(zone_names[z])) continue;
+            const float probe_step = 0.1f;
+            for (float d = 0.f; d <= 1.f; d += probe_step) {
+                const pf::BiomeDef* bdef = ctx.biomes->get_biome_at(d, zones[z]);
+                if (bdef && bdef->zone == zones[z]) {
+                    ImGui::BulletText("%.1f\u2013%.1f  %s",
+                                      bdef->min_depth, bdef->max_depth,
+                                      bdef->name.c_str());
+                }
             }
+            ImGui::TreePop();
         }
     }
 

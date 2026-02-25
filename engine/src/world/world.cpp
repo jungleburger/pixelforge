@@ -34,6 +34,9 @@ const SettledPixel* World::get_settled(int wx, int wy) const {
 }
 
 void World::set_settled(int wx, int wy, SettledPixel pixel) {
+    // Auto-assign a unique ID if the caller left it unset (id == 0)
+    if (pixel.id == INVALID_PIXEL_ID)
+        pixel.id = m_next_pixel_id++;
     auto [cx, cy] = world_to_chunk(wx, wy);
     auto [lx, ly] = world_to_local(wx, wy);
     get_or_create_chunk(cx, cy).set_cell(lx, ly, pixel);

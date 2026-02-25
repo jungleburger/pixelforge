@@ -71,7 +71,7 @@ void ElementEditorPanel::draw(EditorContext& ctx) {
             ImGui::TextDisabled("  Solidify: never");
 
         if (def->ignition_point >= 0.f)
-            ImGui::Text("\ud83d\udd25 Ignites \u2265  %.0f \u00b0C  ash: \"%s\"",
+            ImGui::Text("  Ignites >= %.0f \u00b0C  ash: \"%s\"",
                         def->ignition_point, def->ash_into_tag.c_str());
         else
             ImGui::TextDisabled("  Ignites : never");

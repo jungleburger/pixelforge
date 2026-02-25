@@ -16,6 +16,7 @@
 #include "panels/hierarchy_panel.hpp"
 #include "panels/worldgen_panel.hpp"
 #include "panels/asset_browser_panel.hpp"
+#include <SDL3/SDL.h>
 #include <memory>
 #include <string>
 
@@ -39,7 +40,7 @@ private:
     void render();
 
     SDL_Window*                     m_window{nullptr};
-    void*                           m_gl_ctx{nullptr};
+    SDL_GLContext                   m_gl_ctx{nullptr};
 
     std::unique_ptr<ElementRegistry> m_registry;
     std::unique_ptr<BiomeRegistry>   m_biomes;

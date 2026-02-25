@@ -3,6 +3,7 @@
 #include <pixelforge/lattice/lattice.hpp>
 #include <pixelforge/bond/bond.hpp>
 #include <pixelforge/element/element_registry.hpp>
+#include <pixelforge/core/types.hpp>
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -52,6 +53,7 @@ private:
     ElementRegistry& m_registry;
     Lattice          m_lattice;
     BondManager      m_bonds;
+    PixelID          m_next_pixel_id{1};  // starts at 1; 0 == INVALID_PIXEL_ID
 
     std::unordered_map<uint64_t, std::unique_ptr<Chunk>> m_chunks;
 
