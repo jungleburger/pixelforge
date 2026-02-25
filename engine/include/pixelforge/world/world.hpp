@@ -47,6 +47,7 @@ public:
     [[nodiscard]] static std::pair<int,int> chunk_to_world(int cx, int cy, int lx, int ly) noexcept;
 
     [[nodiscard]] size_t chunk_count() const { return m_chunks.size(); }
+    [[nodiscard]] size_t awake_chunk_count() const;
 
 private:
     WorldConfig      m_config;

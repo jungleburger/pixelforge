@@ -7,6 +7,7 @@
 #include <imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
 #include <glad/glad.h>
+#include <sol/sol.hpp>
 #include <cstring>
 #include <format>
 
@@ -80,8 +81,45 @@ bool EditorApp::init(int window_w, int window_h) {
 
     m_running = true;
     m_last_time = static_cast<float>(SDL_GetTicks()) / 1000.f;
+
+    // Phase 8: Hook the engine logger into the console panel.
+    pf::Logger::instance().add_sink(
+        [this](pf::LogLevel level, std::string_view msg) {
+            m_console_panel.push(level, std::string(msg));
+        });
+
+    // Phase 8: Initialise Lua + REPL.
+    init_lua();
+
     PF_LOG_INFO("EditorApp: initialised {}x{}", window_w, window_h);
     return true;
+}
+
+void EditorApp::init_lua() {
+    m_lua     = std::make_unique<sol::state>();
+    m_lua_api = std::make_unique<LuaApi>(*m_world, *m_registry);
+    m_lua_api->bind(*m_lua);
+
+    // Wire exec_lua so ConsolePanel can run REPL commands.
+    m_ctx.exec_lua = [this](std::string_view code) -> std::string {
+        auto result = m_lua->safe_script(
+            std::string(code), sol::script_pass_on_error);
+        if (!result.valid()) {
+            sol::error err = result;
+            return std::format("[Lua Error] {}", err.what());
+        }
+        // Try to stringify the return value.
+        if (result.return_count() > 0) {
+            sol::object ret = result[0];
+            if (ret.get_type() == sol::type::string)
+                return ret.as<std::string>();
+            if (ret.get_type() == sol::type::number)
+                return std::to_string(ret.as<double>());
+            if (ret.get_type() == sol::type::boolean)
+                return ret.as<bool>() ? "true" : "false";
+        }
+        return "";
+    };
 }
 
 void EditorApp::run() {
@@ -104,16 +142,42 @@ void EditorApp::process_events() {
         if (ev.type == SDL_EVENT_WINDOW_RESIZED) {
             m_renderer->resize(ev.window.data1, ev.window.data2);
         }
+        // Space = toggle simulation pause (only when ImGui is not capturing keyboard)
+        if (ev.type == SDL_EVENT_KEY_DOWN &&
+            ev.key.key == SDLK_SPACE &&
+            !ImGui::GetIO().WantCaptureKeyboard) {
+            m_ctx.simulation_paused = !m_ctx.simulation_paused;
+        }
     }
 }
 
 void EditorApp::update(float dt) {
+    if (m_ctx.simulation_paused) {
+        m_perf_panel.record_frame(dt);
+        return;
+    }
+
+    using Clock = std::chrono::high_resolution_clock;
+    auto t0 = Clock::now();
     m_particles->update(dt);
+    auto t1 = Clock::now();
     m_reactions->apply_dynamic_heat(dt);
     m_reactions->tick(dt);
+    auto t2 = Clock::now();
     m_perf_panel.record_frame(dt);
+    auto t3 = Clock::now();
     m_renderer->settled_layer().upload(*m_world);
     m_renderer->dynamic_layer().upload(*m_world);
+    auto t4 = Clock::now();
+
+    auto ms = [](auto a, auto b) -> float {
+        return std::chrono::duration<float, std::milli>(b - a).count();
+    };
+    m_sys_times.physics_ms          = ms(t0, t1);
+    m_sys_times.reactions_ms        = ms(t1, t2);
+    m_sys_times.renderer_upload_ms  = ms(t3, t4);
+    // imgui_ms is filled during render()
+    m_perf_panel.record_subsystem_times(m_sys_times);
 }
 
 void EditorApp::render() {
@@ -149,6 +213,9 @@ void EditorApp::render() {
                     m_ctx.world     = m_world.get();
                     m_ctx.particles = m_particles.get();
                     m_ctx.reactions = m_reactions.get();
+                    // Re-bind Lua to the new world
+                    m_lua_api = std::make_unique<LuaApi>(*m_world, *m_registry);
+                    m_lua_api->bind(*m_lua);
                     m_console_panel.push(std::format("[Load] World loaded from '{}'.", m_ctx.save_path));
                 } else {
                     m_console_panel.push(std::format("[Load] ERROR: {}", result.error().message));
@@ -173,7 +240,9 @@ void EditorApp::render() {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Simulation")) {
-            ImGui::SliderFloat("Ambient Temp (°C)", &m_reactions->ambient_temperature,
+            ImGui::MenuItem("Pause / Resume", "Space", &m_ctx.simulation_paused);
+            ImGui::Separator();
+            ImGui::SliderFloat("Ambient Temp (\u00b0C)", &m_reactions->ambient_temperature,
                                -100.f, 2000.f, "%.0f");
             ImGui::SliderFloat("Conduction Scale",  &m_reactions->conduction_scale,
                                0.f, 10.f, "%.2f");
@@ -193,8 +262,16 @@ void EditorApp::render() {
     m_worldgen_panel.draw(m_ctx);
     m_asset_browser_panel.draw(m_ctx);
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    {
+        using Clock = std::chrono::high_resolution_clock;
+        auto imgui_t0 = Clock::now();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        auto imgui_t1 = Clock::now();
+        m_sys_times.imgui_ms = std::chrono::duration<float, std::milli>
+                               (imgui_t1 - imgui_t0).count();
+        m_perf_panel.record_subsystem_times(m_sys_times);
+    }
 
     SDL_GL_SwapWindow(m_window);
     m_renderer->end_frame();
@@ -206,6 +283,10 @@ void EditorApp::shutdown() {
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
     }
+    // Lua must be destroyed before world/registry
+    m_ctx.exec_lua = {};  // clear the lambda that holds 'this'
+    m_lua_api.reset();
+    m_lua.reset();
     m_renderer.reset();
     m_reactions.reset();
     m_particles.reset();

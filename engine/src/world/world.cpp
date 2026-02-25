@@ -90,6 +90,14 @@ std::pair<int,int> World::chunk_to_world(int cx, int cy, int lx, int ly) noexcep
     return {cx * CHUNK_SIZE + lx, cy * CHUNK_SIZE + ly};
 }
 
+size_t World::awake_chunk_count() const {
+    size_t n = 0;
+    for (const auto& [key, chunk] : m_chunks) {
+        if (!chunk->sleeping) ++n;
+    }
+    return n;
+}
+
 uint64_t World::chunk_key(int cx, int cy) noexcept {
     return (static_cast<uint64_t>(static_cast<uint32_t>(cx)) << 32) |
             static_cast<uint64_t>(static_cast<uint32_t>(cy));

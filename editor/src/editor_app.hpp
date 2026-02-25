@@ -6,6 +6,7 @@
 #include <pixelforge/procgen/biome.hpp>
 #include <pixelforge/renderer/gl_renderer.hpp>
 #include <pixelforge/save/world_serialiser.hpp>
+#include <pixelforge/scripting/lua_api.hpp>
 #include "editor_context.hpp"
 #include "panels/viewport_panel.hpp"
 #include "panels/inspector_panel.hpp"
@@ -16,7 +17,9 @@
 #include "panels/hierarchy_panel.hpp"
 #include "panels/worldgen_panel.hpp"
 #include "panels/asset_browser_panel.hpp"
+#include <sol/sol.hpp>
 #include <SDL3/SDL.h>
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -39,6 +42,9 @@ private:
     void update(float dt);
     void render();
 
+    // Initialise the sol::state and bind LuaApi + the exec_lua ctx callback.
+    void init_lua();
+
     SDL_Window*                     m_window{nullptr};
     SDL_GLContext                   m_gl_ctx{nullptr};
 
@@ -48,6 +54,8 @@ private:
     std::unique_ptr<ParticleSystem>  m_particles;
     std::unique_ptr<ReactionSystem>  m_reactions;
     std::unique_ptr<GlRenderer>      m_renderer;
+    std::unique_ptr<sol::state>      m_lua;
+    std::unique_ptr<LuaApi>          m_lua_api;
 
     EditorContext     m_ctx;
 
@@ -64,6 +72,11 @@ private:
 
     bool  m_running{false};
     float m_last_time{0.f};
+
+    // Per-subsystem high-resolution timing
+    using Clock    = std::chrono::high_resolution_clock;
+    using TimePoint = Clock::time_point;
+    SubsystemTimes m_sys_times;
 };
 
 } // namespace pf::editor

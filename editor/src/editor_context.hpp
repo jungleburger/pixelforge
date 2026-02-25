@@ -5,6 +5,7 @@
 #include <pixelforge/procgen/biome.hpp>
 #include <pixelforge/physics/particle_system.hpp>
 #include <pixelforge/core/types.hpp>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -24,6 +25,7 @@ struct EditorContext {
     int              selected_element{0};
     int              brush_size{1};
     bool             show_grid{false};
+    bool             simulation_paused{false};
 
     // Heat-brush tool (Phase 4)
     bool             heat_brush_active{false};
@@ -36,6 +38,10 @@ struct EditorContext {
 
     // Phase 5: save / load path (editable in File menu)
     std::string               save_path{"world.pfw"};
+
+    // Phase 8: Lua REPL — execute a string of Lua, return result string or error.
+    // Set by EditorApp once the sol::state is ready.
+    std::function<std::string(std::string_view)> exec_lua;
 };
 
 } // namespace pf::editor
