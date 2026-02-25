@@ -10,6 +10,7 @@ add_executable(pixelforge_tests
     test_physics.cpp
     test_procgen.cpp
     test_reactions.cpp
+    test_save.cpp
 )
 
 target_link_libraries(pixelforge_tests PRIVATE
