@@ -158,7 +158,7 @@ pixelforge/
 | 5 | **Editor** — full ImGui panel suite | ✅ Complete |
 | 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | ✅ Complete |
 | 7 | **Save/Load** — zstd world serialisation | ✅ Complete |
-| 8 | **Scripting** — Lua hot-reload, modding API | ⬜ Planned |
+| 8 | **Editor Panels** — Asset Browser (directory nav, file preview, new-element wizard), Console (log-level filtering, timestamps, Lua REPL), Performance (per-subsystem timing bars, min/max FPS, bond/chunk counts) | ✅ Complete |
 | 9 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
 
