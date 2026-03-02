@@ -6,6 +6,7 @@ define_element {
     density              = 0.01,
     viscosity            = 0.0,
     flammability         = 0.0,
+    restitution          = 0.0,
     boiling_point        = 1200.0,   -- fire "boils out" (extinguishes at extreme heat)
     boil_into            = "smoke",
     emits_light          = true,

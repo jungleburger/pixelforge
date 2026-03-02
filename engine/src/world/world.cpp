@@ -1,11 +1,16 @@
 #include <pixelforge/world/world.hpp>
 #include <pixelforge/core/logger.hpp>
+#include <algorithm>
 
 namespace pf {
 
 World::World(WorldConfig config, ElementRegistry& registry)
     : m_config(config), m_registry(registry)
-{}
+{
+    // Resolve sentinel floor_y: -1 means "bottom of declared height".
+    if (m_config.floor_y < 0)
+        m_config.floor_y = m_config.height - 1;
+}
 
 Chunk* World::get_chunk(int cx, int cy) {
     auto it = m_chunks.find(chunk_key(cx, cy));
@@ -72,6 +77,16 @@ std::vector<DynamicPixel*> World::collect_all_dynamic() {
     return out;
 }
 
+std::vector<const DynamicPixel*> World::collect_all_dynamic() const {
+    std::vector<const DynamicPixel*> out;
+    for (const auto& [key, chunk] : m_chunks) {
+        for (const auto& dp : chunk->dynamic_pixels) {
+            out.push_back(&dp);
+        }
+    }
+    return out;
+}
+
 std::pair<int,int> World::world_to_chunk(int wx, int wy) noexcept {
     // Floor-division so negative coords work correctly.
     auto fdiv = [](int a, int b) {
@@ -96,6 +111,16 @@ size_t World::awake_chunk_count() const {
         if (!chunk->sleeping) ++n;
     }
     return n;
+}
+
+void World::sweep_dead_dynamics() {
+    for (auto& [key, chunk] : m_chunks) {
+        auto& dyn = chunk->dynamic_pixels;
+        dyn.erase(
+            std::remove_if(dyn.begin(), dyn.end(),
+                           [](const DynamicPixel& dp) { return !dp.awake; }),
+            dyn.end());
+    }
 }
 
 uint64_t World::chunk_key(int cx, int cy) noexcept {

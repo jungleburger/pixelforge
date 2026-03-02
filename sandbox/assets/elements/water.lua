@@ -6,6 +6,7 @@ define_element {
     density              = 1.0,
     viscosity            = 0.02,
     flammability         = 0.0,
+    restitution          = 0.05,
     boiling_point        = 373.0,
     boil_into            = "steam",
     -- Phase 3

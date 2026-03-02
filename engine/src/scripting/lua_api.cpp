@@ -32,6 +32,7 @@ void LuaApi::bind(sol::state& lua) {
         def.density      = getf("density",      1.f);
         def.viscosity    = getf("viscosity",    0.f);
         def.flammability = getf("flammability", 0.f);
+        def.restitution  = getf("restitution",  0.35f);
         def.melting_point= getf("melting_point",-1.f);
         def.boiling_point= getf("boiling_point",-1.f);
         def.emits_light  = getb("emits_light",  false);

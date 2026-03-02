@@ -36,3 +36,10 @@ target_link_libraries(pixelforge_editor PRIVATE
 )
 
 target_compile_features(pixelforge_editor PRIVATE cxx_std_23)
+
+# Copy shared assets (element definitions etc.) next to the editor binary
+add_custom_command(TARGET pixelforge_editor POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/sandbox/assets
+        $<TARGET_FILE_DIR:pixelforge_editor>/assets
+)

@@ -1,6 +1,7 @@
 #include "viewport_panel.hpp"
 #include <imgui.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace pf::editor {
 
@@ -11,16 +12,24 @@ void ViewportPanel::world_coords(float mx, float my, int& wx, int& wy) const noe
     wy = static_cast<int>((my - m_canvas_y - m_pan_y) / m_zoom);
 }
 
+void ViewportPanel::world_coords_f(float mx, float my, float& wx, float& wy) const noexcept {
+    wx = (mx - m_canvas_x - m_pan_x) / m_zoom;
+    wy = (my - m_canvas_y - m_pan_y) / m_zoom;
+}
+
 void ViewportPanel::dispatch_tool(float mx, float my,
                                    bool pressed, bool held, bool released,
                                    EditorContext& ctx) {
     int wx{}, wy{};
     world_coords(mx, my, wx, wy);
 
+    float fwx{}, fwy{};
+    world_coords_f(mx, my, fwx, fwy);
+
     switch (ctx.active_tool) {
         case ActiveTool::Paint:
-            if (pressed) m_paint.on_mouse_down(wx, wy, ctx);
-            else if (held) m_paint.on_mouse_drag(wx, wy, ctx);
+            if (pressed) m_paint.on_mouse_down(fwx, fwy, ctx);
+            else if (held) m_paint.on_mouse_drag(fwx, fwy, ctx);
             break;
 
         case ActiveTool::Erase:
@@ -74,6 +83,16 @@ void ViewportPanel::draw(EditorContext& ctx) {
     ImGui::Checkbox("Grid",     &ctx.show_grid);
     ImGui::SameLine();
     ImGui::Checkbox("Temp",     &ctx.show_temp_overlay);
+    ImGui::SameLine();
+    ImGui::Checkbox("Light",    &ctx.show_lighting);
+    ImGui::SameLine();
+    ImGui::Checkbox("Occ",      &ctx.light_occlusion);
+    if (ctx.show_lighting && ctx.light_occlusion) {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(110.f);
+        ImGui::SliderFloat("##occ_strength", &ctx.light_occlusion_strength,
+                           0.f, 0.9f, "Occ %.2f");
+    }
     ImGui::SameLine();
     ImGui::Checkbox("Heat",     &ctx.heat_brush_active);
     if (ctx.heat_brush_active) {
@@ -153,6 +172,42 @@ void ViewportPanel::draw(EditorContext& ctx) {
                       ctx);
     }
 
+    // ── Render world texture ──────────────────────────────────────────────
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->PushClipRect({m_canvas_x, m_canvas_y},
+                     {m_canvas_x + avail.x, m_canvas_y + avail.y}, true);
+
+    if (ctx.viewport_texture && ctx.world_width > 0 && ctx.world_height > 0) {
+        const float ww = static_cast<float>(ctx.world_width);
+        const float wh = static_cast<float>(ctx.world_height);
+        const ImVec2 p_min{
+            m_canvas_x + m_pan_x,
+            m_canvas_y + m_pan_y
+        };
+        const ImVec2 p_max{
+            p_min.x + ww * m_zoom,
+            p_min.y + wh * m_zoom
+        };
+        dl->AddImage(
+            (ImTextureID)(intptr_t)ctx.viewport_texture,
+            p_min, p_max,
+            ImVec2(0, 1), ImVec2(1, 0)
+        );
+    }
+
+    // ── Grid overlay ──────────────────────────────────────────────────────
+    if (ctx.show_grid && m_zoom >= 4.f && ctx.world_width > 0 && ctx.world_height > 0) {
+        const float ww = static_cast<float>(ctx.world_width);
+        const float wh = static_cast<float>(ctx.world_height);
+        const float x0 = m_canvas_x + m_pan_x;
+        const float y0 = m_canvas_y + m_pan_y;
+        const ImU32 grid_col = IM_COL32(255, 255, 255, 30);
+        for (float gx = 0; gx <= ww; gx += 1.f)
+            dl->AddLine({x0 + gx * m_zoom, y0}, {x0 + gx * m_zoom, y0 + wh * m_zoom}, grid_col);
+        for (float gy = 0; gy <= wh; gy += 1.f)
+            dl->AddLine({x0, y0 + gy * m_zoom}, {x0 + ww * m_zoom, y0 + gy * m_zoom}, grid_col);
+    }
+
     // ── Selection overlay drawn on top ────────────────────────────────────────
     if (ctx.selection_box.has_value()) {
         const auto& sel = *ctx.selection_box;
@@ -164,7 +219,6 @@ void ViewportPanel::draw(EditorContext& ctx) {
             a.x + sel.w * m_zoom,
             a.y + sel.h * m_zoom
         };
-        ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRect(a, b, IM_COL32(64, 220, 64, 220), 0.f, 0, 1.5f);
         // Dashed corner handles
         constexpr float H = 6.f;
@@ -173,6 +227,8 @@ void ViewportPanel::draw(EditorContext& ctx) {
         dl->AddLine({b.x, b.y}, {b.x - H, b.y},      IM_COL32(255,255,255,200), 2.f);
         dl->AddLine({b.x, b.y}, {b.x, b.y - H},      IM_COL32(255,255,255,200), 2.f);
     }
+
+    dl->PopClipRect();
 
     ImGui::End();
 }

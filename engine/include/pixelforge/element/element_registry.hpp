@@ -26,6 +26,7 @@ struct ElementDef {
     float        density{1.f};
     float        viscosity{0.f};        // 0 = free-flowing, 1 = fully viscous
     float        flammability{0.f};     // 0 = non-flammable, 1 = instantly ignites
+    float        restitution{0.35f};    // bounciness (0 = dead stop, 1 = perfect bounce)
     float        melting_point{-1.f};   // -1 = doesn't melt
     float        boiling_point{-1.f};   // -1 = doesn't evaporate
     ElementID    melt_into{0};

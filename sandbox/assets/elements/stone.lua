@@ -6,6 +6,7 @@ define_element {
     density              = 2.5,
     viscosity            = 1.0,
     flammability         = 0.0,
+    restitution          = 0.5,
     melting_point        = 1600.0,
     melt_into            = "lava",
     -- Phase 3

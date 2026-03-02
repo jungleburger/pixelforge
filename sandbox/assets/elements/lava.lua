@@ -6,6 +6,7 @@ define_element {
     density              = 2.2,
     viscosity            = 0.6,
     flammability         = 0.0,
+    restitution          = 0.1,
     emits_light          = true,
     light_radius         = 4.0,
     light_color          = 0xFF6600FF,

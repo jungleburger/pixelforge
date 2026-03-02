@@ -21,6 +21,9 @@ public:
 
     void   clear();
     [[nodiscard]] size_t size() const { return m_cells.size(); }
+    [[nodiscard]] const std::unordered_map<uint64_t, SettledPixel>& cells() const noexcept {
+        return m_cells;
+    }
 
 private:
     std::unordered_map<uint64_t, SettledPixel> m_cells;

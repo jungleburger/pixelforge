@@ -6,6 +6,7 @@ define_element {
     density              = 1.2,
     viscosity            = 0.01,
     flammability         = 0.0,
+    restitution          = 0.05,
     -- Phase 3
     thermal_conductivity = 0.1,
     -- Phase 4: contact reactions — acid dissolves most solid/granular materials

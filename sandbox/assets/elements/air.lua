@@ -6,4 +6,5 @@ define_element {
     density      = 0.001,
     viscosity    = 0.0,
     flammability = 0.0,
+    restitution  = 0.0,
 }

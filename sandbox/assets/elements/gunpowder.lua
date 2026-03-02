@@ -6,6 +6,7 @@ define_element {
     density              = 1.7,
     viscosity            = 0.0,
     flammability         = 0.95,    -- chain reaction probability 0.95
+    restitution          = 0.25,
     melting_point        = 450.0,
     melt_into            = "fire",
     -- Phase 3

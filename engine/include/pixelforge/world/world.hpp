@@ -12,8 +12,10 @@ namespace pf {
 
 struct WorldConfig {
     uint32_t seed         = 42;
-    int      width        = 4096;
-    int      height       = 2048;
+    int      width        = 4096;    ///< Hint for procgen / renderer; NOT a hard X boundary when infinite_x.
+    int      height       = 2048;    ///< Hint for procgen / renderer.
+    int      floor_y      = -1;      ///< Y coordinate of the hard floor.  -1 = auto (height - 1).
+    bool     infinite_x   = true;    ///< true = no left/right walls.  false = hard walls at 0 and width-1.
     float    cave_density = 0.35f;
     float    water_level  = 0.45f;
     float    lava_depth   = 0.82f;
@@ -34,6 +36,7 @@ public:
 
     void add_dynamic(DynamicPixel pixel);
     [[nodiscard]] std::vector<DynamicPixel*> collect_all_dynamic();
+    [[nodiscard]] std::vector<const DynamicPixel*> collect_all_dynamic() const;
 
     [[nodiscard]] BondManager&             bonds()    { return m_bonds; }
     [[nodiscard]] Lattice&                 lattice()  { return m_lattice; }
@@ -48,6 +51,9 @@ public:
 
     [[nodiscard]] size_t chunk_count() const { return m_chunks.size(); }
     [[nodiscard]] size_t awake_chunk_count() const;
+
+    /// Remove all non-awake DynamicPixels from every chunk.
+    void sweep_dead_dynamics();
 
 private:
     WorldConfig      m_config;

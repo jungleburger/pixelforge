@@ -6,6 +6,7 @@ define_element {
     density              = 2.8,
     viscosity            = 1.0,
     flammability         = 0.0,
+    restitution          = 0.7,
     melting_point        = 1450.0,
     melt_into            = "lava",
     emits_light          = true,

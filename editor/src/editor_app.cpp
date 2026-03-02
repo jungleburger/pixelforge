@@ -9,6 +9,7 @@
 #include <glad/glad.h>
 #include <sol/sol.hpp>
 #include <cstring>
+#include <filesystem>
 #include <format>
 
 namespace pf::editor {
@@ -44,13 +45,12 @@ bool EditorApp::init(int window_w, int window_h) {
     SDL_GL_SetSwapInterval(1); // vsync
 
     m_registry = std::make_unique<ElementRegistry>();
-    m_biomes   = std::make_unique<BiomeRegistry>();
-    register_default_biomes(*m_biomes, *m_registry);
 
     WorldConfig cfg;
-    cfg.seed   = 42;
-    cfg.width  = 512;
-    cfg.height = 256;
+    cfg.seed       = 42;
+    cfg.width      = 512;
+    cfg.height     = 256;
+    cfg.infinite_x = false;   // bounded for now; enable once chunk streaming is in
     m_world    = std::make_unique<World>(cfg, *m_registry);
 
     m_particles = std::make_unique<ParticleSystem>(*m_world);
@@ -60,8 +60,9 @@ bool EditorApp::init(int window_w, int window_h) {
     m_ctx.world     = m_world.get();
     m_ctx.registry  = m_registry.get();
     m_ctx.reactions = m_reactions.get();
-    m_ctx.biomes    = m_biomes.get();
     m_ctx.particles = m_particles.get();
+    m_ctx.world_width  = cfg.width;
+    m_ctx.world_height = cfg.height;
 
     m_renderer = std::make_unique<GlRenderer>();
     if (!m_renderer->init(m_window, window_w, window_h)) {
@@ -69,6 +70,7 @@ bool EditorApp::init(int window_w, int window_h) {
         return false;
     }
     m_renderer->settled_layer().init(cfg.width, cfg.height);
+    m_renderer->init_fbo(cfg.width, cfg.height);
 
     // Setup Dear ImGui
     IMGUI_CHECKVERSION();
@@ -90,6 +92,30 @@ bool EditorApp::init(int window_w, int window_h) {
 
     // Phase 8: Initialise Lua + REPL.
     init_lua();
+
+    // Load Lua element definitions so the palette has usable elements.
+    {
+        auto try_load = [&](const std::string& dir) -> bool {
+            std::error_code ec;
+            if (!std::filesystem::is_directory(dir, ec)) return false;
+            for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+                if (entry.path().extension() == ".lua")
+                    (void)m_lua_api->load_element_file(*m_lua, entry.path().string().c_str());
+            }
+            return true;
+        };
+        if (!try_load("assets/elements"))
+            try_load("sandbox/assets/elements");
+    }
+
+    // Register biomes AFTER elements are loaded so look-ups resolve.
+    m_biomes = std::make_unique<BiomeRegistry>();
+    register_default_biomes(*m_biomes, *m_registry);
+    m_ctx.biomes = m_biomes.get();
+
+    // Default selected element to the first non-Air element (if any).
+    if (m_registry->size() > 1)
+        m_ctx.selected_element = 1;
 
     PF_LOG_INFO("EditorApp: initialised {}x{}", window_w, window_h);
     return true;
@@ -152,36 +178,46 @@ void EditorApp::process_events() {
 }
 
 void EditorApp::update(float dt) {
-    if (m_ctx.simulation_paused) {
-        m_perf_panel.record_frame(dt);
-        return;
-    }
+    m_renderer->settled_layer().set_lighting_enabled(m_ctx.show_lighting);
+    m_renderer->settled_layer().set_occlusion_enabled(m_ctx.light_occlusion);
+    m_renderer->settled_layer().set_occlusion_strength(m_ctx.light_occlusion_strength);
 
     using Clock = std::chrono::high_resolution_clock;
-    auto t0 = Clock::now();
-    m_particles->update(dt);
-    auto t1 = Clock::now();
-    m_reactions->apply_dynamic_heat(dt);
-    m_reactions->tick(dt);
-    auto t2 = Clock::now();
+
+    if (!m_ctx.simulation_paused) {
+        auto t0 = Clock::now();
+        m_particles->update(dt);
+        auto t1 = Clock::now();
+        m_reactions->apply_dynamic_heat(dt);
+        m_reactions->tick(dt);
+        auto t2 = Clock::now();
+
+        auto ms = [](auto a, auto b) -> float {
+            return std::chrono::duration<float, std::milli>(b - a).count();
+        };
+        m_sys_times.physics_ms   = ms(t0, t1);
+        m_sys_times.reactions_ms = ms(t1, t2);
+    } else {
+        m_sys_times.physics_ms   = 0.f;
+        m_sys_times.reactions_ms = 0.f;
+    }
+
     m_perf_panel.record_frame(dt);
+
+    // Always upload so edits made while paused are visible.
     auto t3 = Clock::now();
     m_renderer->settled_layer().upload(*m_world);
     m_renderer->dynamic_layer().upload(*m_world);
     auto t4 = Clock::now();
 
-    auto ms = [](auto a, auto b) -> float {
-        return std::chrono::duration<float, std::milli>(b - a).count();
-    };
-    m_sys_times.physics_ms          = ms(t0, t1);
-    m_sys_times.reactions_ms        = ms(t1, t2);
-    m_sys_times.renderer_upload_ms  = ms(t3, t4);
-    // imgui_ms is filled during render()
+    m_sys_times.renderer_upload_ms = std::chrono::duration<float, std::milli>(t4 - t3).count();
     m_perf_panel.record_subsystem_times(m_sys_times);
 }
 
 void EditorApp::render() {
     m_renderer->begin_frame();
+    m_renderer->render_world();
+    m_ctx.viewport_texture = m_renderer->world_texture();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -210,9 +246,13 @@ void EditorApp::render() {
                     m_reactions = std::make_unique<ReactionSystem>(*m_world);
                     m_renderer->settled_layer().init(
                         m_world->config().width, m_world->config().height);
+                    m_renderer->init_fbo(
+                        m_world->config().width, m_world->config().height);
                     m_ctx.world     = m_world.get();
                     m_ctx.particles = m_particles.get();
                     m_ctx.reactions = m_reactions.get();
+                    m_ctx.world_width  = m_world->config().width;
+                    m_ctx.world_height = m_world->config().height;
                     // Re-bind Lua to the new world
                     m_lua_api = std::make_unique<LuaApi>(*m_world, *m_registry);
                     m_lua_api->bind(*m_lua);
@@ -236,6 +276,10 @@ void EditorApp::render() {
         }
         if (ImGui::BeginMenu("View")) {
             ImGui::MenuItem("Temperature Overlay", nullptr, &m_ctx.show_temp_overlay);
+            ImGui::MenuItem("Lighting",            nullptr, &m_ctx.show_lighting);
+            ImGui::MenuItem("Light Occlusion",     nullptr, &m_ctx.light_occlusion);
+            ImGui::SliderFloat("Occlusion Strength", &m_ctx.light_occlusion_strength,
+                               0.f, 0.9f, "%.2f");
             ImGui::MenuItem("Show Grid",           nullptr, &m_ctx.show_grid);
             ImGui::EndMenu();
         }

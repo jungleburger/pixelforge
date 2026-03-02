@@ -6,6 +6,7 @@ define_element {
     density              = 0.92,
     viscosity            = 1.0,
     flammability         = 0.0,
+    restitution          = 0.6,
     melting_point        = 273.0,
     melt_into            = "water",
     -- Phase 3

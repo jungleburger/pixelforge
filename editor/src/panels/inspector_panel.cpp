@@ -27,6 +27,17 @@ void InspectorPanel::draw(EditorContext& ctx) {
     ImGui::Text("Tag:     %s", def->tag.c_str());
     ImGui::Text("Density: %.3f", def->density);
 
+    // ── Physics properties ─────────────────────────────────────────────────
+    ImGui::SeparatorText("Physics");
+    {
+        // Cast away const so the slider can mutate the live ElementDef.
+        // Changes take effect immediately; Lua files are the persistent source.
+        auto* mut = const_cast<pf::ElementDef*>(def);
+        ImGui::SliderFloat("Restitution", &mut->restitution, 0.f, 1.f, "%.2f");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Bounciness: 0 = dead stop, 1 = perfect bounce");
+    }
+
     // ── Thermal properties ────────────────────────────────────────────────────
     ImGui::SeparatorText("Thermal (Phase 4)");
     ImGui::Text("Conductivity:  %.3f /s", def->thermal_conductivity);

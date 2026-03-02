@@ -25,6 +25,8 @@ private:
 
     // Convert screen-space mouse position → world integer coordinates
     void world_coords(float mx, float my, int& wx, int& wy) const noexcept;
+    // Convert screen-space mouse position → world sub-pixel coordinates
+    void world_coords_f(float mx, float my, float& wx, float& wy) const noexcept;
 
     // Route a mouse event to the correct tool
     void dispatch_tool(float mx, float my, bool pressed, bool held,

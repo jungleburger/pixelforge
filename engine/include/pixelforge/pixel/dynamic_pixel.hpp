@@ -9,6 +9,8 @@ struct DynamicPixel {
     PixelID      id{0};
     glm::vec2    pos{0.f, 0.f};   // sub-pixel world position
     glm::vec2    vel{0.f, 0.f};   // pixels / second
+    float        angle{0.f};      // radians — current rotation
+    float        angular_vel{0.f}; // radians / second (spin)
     float        lifetime{-1.f};  // -1 = immortal
     float        age{0.f};
     bool         awake{true};

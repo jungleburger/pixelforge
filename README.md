@@ -159,7 +159,7 @@ pixelforge/
 | 6 | **Procedural World Generator** — noise-based terrain, biomes, cave carving, feature placement | ✅ Complete |
 | 7 | **Save/Load** — zstd world serialisation | ✅ Complete |
 | 8 | **Editor Panels** — Asset Browser (directory nav, file preview, new-element wizard), Console (log-level filtering, timestamps, Lua REPL), Performance (per-subsystem timing bars, min/max FPS, bond/chunk counts) | ✅ Complete |
-| 9 | **Lighting** — per-pixel light emission & propagation | ⬜ Planned |
+| 9 | **Lighting** — per-pixel light emission & propagation | ✅ Complete |
 | 10 | **Release** — packaging, Steam, itch.io | ⬜ Planned |
 
 ### Phase 6 — Procedural World Generator ✅
@@ -197,6 +197,28 @@ Fully implemented. Key additions:
 - **Round-trip test suite** (`test_save.cpp`) — 8 Catch2 tests: empty world, pixel attribute
   preservation, config fields, large world (5 000 cells) spot-check, overwrite semantics,
   save/load error paths, and corrupt-data rejection
+
+### Phase 9 — Lighting ✅
+
+Implemented per-pixel emissive lighting in the renderer with editor controls:
+
+- **CPU light propagation pass** in `SettledLayer::upload` gathers all settled emissive pixels
+  (`ElementDef::emits_light`, `light_radius`, `light_color`) and accumulates radial falloff
+  into RGB light buffers (`m_light_r/g/b`)
+- **Per-pixel modulation** applies propagated light + ambient floor to settled pixel output
+  before uploading the texture (`glTexSubImage2D`)
+- **Editor toggle wiring** adds a `show_lighting` flag (`EditorContext`), `View → Lighting`
+  menu toggle, and `Light` checkbox in the Viewport toolbar
+- **Runtime integration** updates `GlRenderer` each frame via
+  `settled_layer().set_lighting_enabled(...)`
+- **Dynamic-pixel emitters** now contribute to lighting as in-flight light sources
+  (e.g., moving fire/lava particles)
+- **Optional solid occlusion attenuation** adds dramatic cave shadowing with
+  `View -> Light Occlusion` and an adjustable `Occlusion Strength` control
+- **Large-world scaling pass** switches settled texture uploads to dirty-tile
+  multi-rectangle updates (`glTexSubImage2D` per changed tile) with adaptive
+  tile sizing (32 / 64 / 128 px chosen each frame from dirty-tile density) to
+  balance GPU call count vs. wasted bandwidth
 
 ---
 

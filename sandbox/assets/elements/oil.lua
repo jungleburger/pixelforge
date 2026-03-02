@@ -6,6 +6,7 @@ define_element {
     density              = 0.85,
     viscosity            = 0.05,
     flammability         = 0.7,
+    restitution          = 0.05,
     boiling_point        = 573.0,
     boil_into            = "smoke",
     -- Phase 3
